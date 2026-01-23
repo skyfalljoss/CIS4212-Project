@@ -9,6 +9,7 @@ unsigned char *Read_File(char fileName[], int *fileLen);
 void Write_File(char fileName[], char input[], int inputLen);
 void Convert_to_Hex(char output[], unsigned char input[], int inputLen);
 void Show_in_Hex(char name[], unsigned char hex[], int hexLen);
+unsigned char *Convert_from_Hex(const char *hex_string, int *out_len);
 unsigned char *PRNG(unsigned char *seed, unsigned long seedlen, unsigned long prnglen);
 unsigned char *Hash_SHA256(unsigned char *input, unsigned long inputlen);
 
@@ -27,12 +28,18 @@ int main(int argc, char *argv[])
     Show_in_Hex("Seed", seed, seedLen);
 
     inputFile = "Ciphertext.txt";
+    int hexLen;
+    unsigned char *ciphertextHex = Read_File(inputFile, &hexLen);
+
+    Show_in_Hex("Ciphertext (Hex)", ciphertextHex, hexLen);
+
     int msgLen;
-    unsigned char *ciphertext = Read_File(inputFile, &msgLen);
+    unsigned char *ciphertext = Convert_from_Hex((char *)ciphertextHex, &msgLen);
+    free(ciphertextHex);
 
     Show_in_Hex("Ciphertext", ciphertext, msgLen);
 
-    unsigned char *secretKey = PRNG(seed, seedLen, 32);
+    unsigned char *secretKey = PRNG(seed, seedLen, msgLen);
 
     unsigned char *plaintext = malloc(msgLen);
 
@@ -48,7 +55,9 @@ int main(int argc, char *argv[])
 
     outputFile = "Hash.txt";
     unsigned char *hash = Hash_SHA256(plaintext, msgLen);
-    Write_File(outputFile, (char *)hash, SHA256_DIGEST_LENGTH);
+    char hashHex[SHA256_DIGEST_LENGTH * 2 + 1];
+    Convert_to_Hex(hashHex, hash, SHA256_DIGEST_LENGTH);
+    Write_File(outputFile, hashHex, SHA256_DIGEST_LENGTH * 2);
     return 0;
 }
 
@@ -142,4 +151,24 @@ unsigned char *Hash_SHA256(unsigned char *input, unsigned long inputlen)
     EVP_DigestFinal_ex(ctx, hash, NULL);
     EVP_MD_CTX_free(ctx);
     return hash;
+}
+
+unsigned char *Convert_from_Hex(const char *hex_string, int *out_len)
+{
+    int len = strlen(hex_string);
+    if (len % 2 != 0)
+    {
+        fprintf(stderr, "Invalid hex string length\n");
+        return NULL;
+    }
+
+    *out_len = len / 2;
+    unsigned char *bytes = malloc(*out_len);
+
+    for (int i = 0; i < *out_len; i++)
+    {
+        sscanf(hex_string + 2 * i, "%2hhx", &bytes[i]);
+    }
+
+    return bytes;
 }

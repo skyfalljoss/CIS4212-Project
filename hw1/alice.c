@@ -115,34 +115,30 @@ int main(int argc, char* argv[]) {
 //=================Helper Functions==================
 
 //---------------- Read from File -------------------
-unsigned char* read_file( char filename[], int* length) {
-    FILE* file = fopen(filename, "rb");
-    if (!file) {
-        perror("Failed to open file");
-        return NULL;
+unsigned char* read_file( char fileName[], int* length) {
+    FILE *pFile;
+	pFile = fopen(fileName, "rb");
+	if (pFile == NULL)
+	{
+		printf("Error opening file.\n");
+		exit(0);
+	}
+    fseek(pFile, 0L, SEEK_END);
+    int temp_size = ftell(pFile)+1;
+    fseek(pFile, 0L, SEEK_SET);
+    unsigned char *output = (unsigned char*) malloc(temp_size);
+	fgets(output, temp_size, pFile);
+	fclose(pFile);
+
+    *length = temp_size-1;
+
+    if (output == NULL)
+    {
+        printf("Memory allocation failed.\n");
+        fclose(pFile);
+        exit(0);
     }
-    
-    fseek(file, 0, SEEK_END);
-    *length = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    
-    unsigned char* data = malloc(*length);
-    if (!data) {
-        perror("Failed to allocate memory");
-        fclose(file);
-        return NULL;
-    }
-    
-    int read = fread(data, 1, *length, file);
-    if (read != *length) {
-        perror("Failed to read file");
-        free(data);
-        fclose(file);
-        return NULL;
-    }
-    
-    fclose(file);
-    return data;
+	return output;
 }
 
 
@@ -175,6 +171,7 @@ unsigned char* generate_key(const unsigned char* seed, unsigned long message_len
     
     unsigned char* key = malloc(message_length);
     unsigned char zeros[message_length];
+    memset(zeros, 0, message_length);
     int out_len;
     
     if (EVP_EncryptUpdate(ctx, key, &out_len, zeros, message_length) != 1) {
@@ -199,6 +196,7 @@ void xor_bytes(unsigned char* result, const unsigned char* a, const unsigned cha
 
 //---------------- Compute SHA-256 -------------------
 unsigned char* compute_sha256(const unsigned char* data, int length) {
+    
     EVP_MD_CTX* ctx = EVP_MD_CTX_new();
     if (!ctx) {
         perror("Failed to create hash context");

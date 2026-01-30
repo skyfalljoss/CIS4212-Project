@@ -206,9 +206,9 @@ int main(int argc, char *argv[])
     }
 
     if (valid)
-        Write_File("verification_result.txt", "ACCEPT");
+        Write_File("verification_result.txt", "ACCEPT\n");
     else
-        Write_File("verification_result.txt", "REJECT");
+        Write_File("verification_result.txt", "REJECT\n");
 
     return 0;
 }

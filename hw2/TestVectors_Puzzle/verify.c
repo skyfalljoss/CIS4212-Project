@@ -210,5 +210,5 @@ int main(int argc, char *argv[])
     else
         Write_File("verification_result.txt", "REJECT\n");
 
-    return 0;
+    return valid ? 0 : 1;
 }
